@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useWeb3 } from '../../contexts/Web3Context';
-import { Bug, Menu, X, Home, Store, Upload, User, Wallet } from 'lucide-react';
+import { Bug, Menu, X, Home, Store, Upload, User, Wallet, Zap } from 'lucide-react';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -40,43 +40,46 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="fixed top-0 w-full z-50 bg-primary-900/95 backdrop-blur-lg border-b border-primary-700/50">
+      <nav className="fixed top-0 w-full z-50 glass border-b border-white/10">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link to="/" className="flex items-center space-x-2 group">
-              <Bug className="w-8 h-8 text-accent-purple group-hover:animate-pulse" />
+            <Link to="/" className="flex items-center space-x-3 group">
+              <div className="relative">
+                <Bug className="w-8 h-8 text-indigo-400 group-hover:text-indigo-300 transition-colors duration-300" />
+                <div className="absolute inset-0 bg-indigo-400 rounded-full blur-lg opacity-20 group-hover:opacity-40 transition-opacity duration-300"></div>
+              </div>
               <span className="text-xl font-bold gradient-text">De-Bugger</span>
             </Link>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-6">
+            <div className="hidden md:flex items-center space-x-2">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-medium transition-all duration-300 ${
                       isActivePath(item.path)
-                        ? 'bg-accent-purple/20 text-accent-purple border border-accent-purple/30'
-                        : 'text-primary-300 hover:text-white hover:bg-primary-700/50'
+                        ? 'bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-white border border-indigo-500/50'
+                        : 'text-gray-300 hover:text-white hover:bg-white/10'
                     }`}
                   >
                     <Icon className="w-4 h-4" />
-                    <span className="font-medium">{item.label}</span>
+                    <span>{item.label}</span>
                   </Link>
                 );
               })}
             </div>
 
             {/* Wallet Section */}
-            <div className="hidden md:flex items-center space-x-4">
+            <div className="hidden md:flex items-center space-x-3">
               {/* Balance Display */}
               {isConnected && balance && (
-                <div className="flex items-center space-x-2 bg-primary-800/50 px-4 py-2 rounded-lg border border-primary-600">
-                  <Wallet className="w-4 h-4 text-accent-green" />
-                  <span className="text-sm font-medium">
+                <div className="flex items-center space-x-2 bg-gray-800/50 backdrop-blur-sm px-4 py-2 rounded-xl border border-gray-600/50">
+                  <Zap className="w-4 h-4 text-emerald-400" />
+                  <span className="text-sm font-semibold text-emerald-400">
                     {formatBalance(balance)} FIL
                   </span>
                 </div>
@@ -84,8 +87,8 @@ const Navbar = () => {
 
               {/* Network Warning */}
               {isConnected && !isCorrectNetwork && (
-                <div className="bg-accent-red/20 border border-accent-red/30 px-3 py-1 rounded-lg">
-                  <span className="text-xs text-accent-red font-medium">Wrong Network</span>
+                <div className="bg-red-500/20 border border-red-500/30 px-3 py-1 rounded-xl">
+                  <span className="text-xs text-red-400 font-medium">Wrong Network</span>
                 </div>
               )}
 
@@ -93,11 +96,11 @@ const Navbar = () => {
               <button
                 onClick={handleWalletClick}
                 disabled={isConnecting}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 ${
                   isConnected
-                    ? 'bg-primary-700 hover:bg-primary-600 text-white border border-primary-600'
+                    ? 'bg-gray-800/50 hover:bg-gray-700/50 text-white border border-gray-600/50 hover:border-gray-500/50'
                     : 'btn-primary'
-                } disabled:opacity-50`}
+                } disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none`}
               >
                 <Wallet className="w-4 h-4" />
                 <span>
@@ -114,7 +117,7 @@ const Navbar = () => {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 rounded-lg bg-primary-700/50 hover:bg-primary-700 transition-colors"
+              className="md:hidden p-2 rounded-xl bg-gray-800/50 hover:bg-gray-700/50 transition-colors duration-300"
             >
               {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -123,7 +126,7 @@ const Navbar = () => {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden bg-primary-900/95 backdrop-blur-lg border-b border-primary-700/50">
+          <div className="md:hidden glass border-t border-white/10">
             <div className="px-4 py-6 space-y-4">
               {/* Mobile Navigation Items */}
               {navItems.map((item) => {
@@ -133,24 +136,24 @@ const Navbar = () => {
                     key={item.path}
                     to={item.path}
                     onClick={() => setIsMenuOpen(false)}
-                    className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                    className={`flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all duration-300 ${
                       isActivePath(item.path)
-                        ? 'bg-accent-purple/20 text-accent-purple border border-accent-purple/30'
-                        : 'text-primary-300 hover:text-white hover:bg-primary-700/50'
+                        ? 'bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-white border border-indigo-500/50'
+                        : 'text-gray-300 hover:text-white hover:bg-white/10'
                     }`}
                   >
                     <Icon className="w-5 h-5" />
-                    <span className="font-medium">{item.label}</span>
+                    <span>{item.label}</span>
                   </Link>
                 );
               })}
 
               {/* Mobile Wallet Section */}
-              <div className="pt-4 border-t border-primary-700 space-y-4">
+              <div className="pt-4 border-t border-gray-700/50 space-y-4">
                 {isConnected && balance && (
-                  <div className="flex items-center space-x-2 bg-primary-800/50 px-4 py-3 rounded-lg border border-primary-600">
-                    <Wallet className="w-5 h-5 text-accent-green" />
-                    <span className="font-medium">{formatBalance(balance)} FIL</span>
+                  <div className="flex items-center space-x-2 bg-gray-800/50 px-4 py-3 rounded-xl border border-gray-600/50">
+                    <Zap className="w-5 h-5 text-emerald-400" />
+                    <span className="font-semibold text-emerald-400">{formatBalance(balance)} FIL</span>
                   </div>
                 )}
 

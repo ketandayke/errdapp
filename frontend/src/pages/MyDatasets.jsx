@@ -3,33 +3,28 @@ import { useWeb3 } from '../contexts/Web3Context';
 import { getDatasets } from '../services/api';
 import { ethers } from 'ethers';
 import toast from 'react-hot-toast';
-import { Download, ExternalLink, Brain, Upload } from 'lucide-react';
+import { Download, ExternalLink, Brain, Upload, User, ShoppingBag, Wallet, Eye, TrendingUp, Calendar } from 'lucide-react';
 
 // Import both ABIs - make sure paths are correct
 import MarketplaceABI from '../../../contracts/artifacts/contracts/Marketplace.sol/Marketplace.json';
 import DatasetNFTABI from '../../../contracts/artifacts/contracts/DatasetNFT.sol/DatasetNFT.json';
 
-
-// A new, more detailed card for displaying owned/submitted datasets
+// Enhanced card component for owned/submitted datasets
 const OwnedDatasetCard = ({ dataset, type = 'purchase' }) => {
     const { signer } = useWeb3();
 
     const category = dataset.attributes?.find(a => a.trait_type === "Platform/Library")?.value || 'General';
+    const complexity = dataset.attributes?.find(a => a.trait_type === "Complexity Score")?.value || 70;
 
     const handleDownload = async () => {
         const toastId = toast.loading("Preparing secure download...");
         
         try {
-            // This is where you would integrate the Lighthouse SDK on the frontend
             console.log("Attempting to download private data for CID:", dataset.private_data_cid);
             
-            // Example of how you would generate the auth message for Lighthouse
             const message = await signer.signMessage(`I am signing a message to download CID: ${dataset.private_data_cid}`);
             console.log("Generated Auth Signature:", message);
             
-            // You would now pass the CID and the signed message to the Lighthouse SDK's download function.
-            // const decryptedFile = await lighthouse.fetch(dataset.private_data_cid, message);
-
             toast.success("Download would start here! Check the console for details.", { id: toastId, duration: 5000 });
 
         } catch(error) {
@@ -38,47 +33,111 @@ const OwnedDatasetCard = ({ dataset, type = 'purchase' }) => {
         }
     };
     
-    // Construct the block explorer URL
     const explorerUrl = `https://calibration.filfox.info/en/token/${import.meta.env.VITE_NFT_CONTRACT_ADDRESS}?a=${dataset.tokenId}`;
 
+    const getComplexityBadge = (score) => {
+        if (score > 70) return { class: 'complexity-high', text: 'High' };
+        if (score > 40) return { class: 'complexity-medium', text: 'Medium' };
+        return { class: 'complexity-low', text: 'Low' };
+    };
+
+    const complexityBadge = getComplexityBadge(complexity);
+
     return (
-        <div className="bg-primary-700 p-4 rounded-lg flex flex-col sm:flex-row justify-between items-center border border-primary-600 gap-4">
-            <div className="flex-grow">
-                <div className="flex items-center gap-3">
-                     <span className={`p-2 rounded-full ${type === 'purchase' ? 'bg-accent-green/10' : 'bg-accent-blue/10'}`}>
-                        {type === 'purchase' ? <Download className="text-accent-green" size={20}/> : <Upload className="text-accent-blue" size={20}/>}
-                    </span>
-                    <div>
-                        <h3 className="font-bold text-lg text-text-primary">{dataset.name}</h3>
-                        <p className="text-sm text-text-muted">Token ID: {dataset.tokenId} • Category: {category}</p>
+        <div className="card group overflow-hidden">
+            <div className="p-6">
+                <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+                    {/* Dataset Info */}
+                    <div className="flex-1 space-y-4">
+                        <div className="flex items-start gap-4">
+                            <div className={`p-3 rounded-xl ${
+                                type === 'purchase' 
+                                    ? 'bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/30' 
+                                    : 'bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30'
+                            }`}>
+                                {type === 'purchase' 
+                                    ? <Download className="w-6 h-6 text-emerald-400" />
+                                    : <Upload className="w-6 h-6 text-indigo-400" />
+                                }
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h3 className="text-xl font-bold text-white mb-2 group-hover:gradient-text transition-all duration-300">
+                                    {dataset.name}
+                                </h3>
+                                <div className="flex flex-wrap items-center gap-3 text-sm text-gray-400">
+                                    <span className="flex items-center gap-1">
+                                        <Calendar className="w-4 h-4" />
+                                        Token #{dataset.tokenId}
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                        <Brain className="w-4 h-4" />
+                                        {category}
+                                    </span>
+                                    <span className={`px-2 py-1 text-xs font-semibold rounded-lg ${complexityBadge.class}`}>
+                                        {complexityBadge.text} Complexity
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Stats for submissions */}
+                        {type === 'submission' && (
+                            <div className="flex items-center gap-6 pt-2">
+                                <div className="flex items-center gap-2 text-emerald-400">
+                                    <TrendingUp className="w-4 h-4" />
+                                    <span className="text-sm font-semibold">
+                                        {dataset.price} tFIL
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2 text-purple-400">
+                                    <ShoppingBag className="w-4 h-4" />
+                                    <span className="text-sm">
+                                        {dataset.totalSales || 0} sales
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                        <a 
+                            href={explorerUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="btn-secondary flex items-center gap-2"
+                        >
+                            <ExternalLink className="w-4 h-4" />
+                            <span className="hidden sm:inline">Explorer</span>
+                        </a>
+                        
+                        {type === 'purchase' ? (
+                            <button 
+                                onClick={handleDownload}
+                                className="btn-primary flex items-center gap-2"
+                            >
+                                <Download className="w-4 h-4" />
+                                <span className="hidden sm:inline">Download</span>
+                            </button>
+                        ) : (
+                            <button className="btn-outline flex items-center gap-2">
+                                <Eye className="w-4 h-4" />
+                                <span className="hidden sm:inline">Preview</span>
+                            </button>
+                        )}
                     </div>
                 </div>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-                 <a href={explorerUrl} target="_blank" rel="noopener noreferrer" className="bg-primary-600 text-text-secondary font-bold py-2 px-4 rounded-lg hover:bg-primary-800 transition-colors flex items-center gap-2">
-                    <ExternalLink size={16} />
-                    Explorer
-                </a>
-                {type === 'purchase' && (
-                    <button 
-                        onClick={handleDownload}
-                        className="bg-accent-green text-white font-bold py-2 px-4 rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
-                    >
-                        <Download size={16} />
-                        Download Data
-                    </button>
-                )}
             </div>
         </div>
     );
 };
-
 
 const MyDatasets = () => {
     const { account, provider, isConnected } = useWeb3();
     const [purchasedDatasets, setPurchasedDatasets] = useState([]);
     const [submittedDatasets, setSubmittedDatasets] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('purchases');
 
     useEffect(() => {
         const fetchMyDatasets = async () => {
@@ -96,11 +155,9 @@ const MyDatasets = () => {
                     return;
                 }
                 
-                // Filter for datasets submitted by the current user
                 const mySubmissions = allDatasets.filter(d => d.seller.toLowerCase() === account.toLowerCase());
                 setSubmittedDatasets(mySubmissions);
 
-                // Check balances to find purchased datasets
                 const nftContractAddress = import.meta.env.VITE_NFT_CONTRACT_ADDRESS;
                 const nftContract = new ethers.Contract(nftContractAddress, DatasetNFTABI.abi, provider);
 
@@ -109,7 +166,6 @@ const MyDatasets = () => {
                 );
                 
                 const balances = await Promise.all(balanceChecks);
-
                 const myPurchases = allDatasets.filter((_, index) => balances[index].gt(0));
                 
                 setPurchasedDatasets(myPurchases);
@@ -125,56 +181,168 @@ const MyDatasets = () => {
         fetchMyDatasets();
     }, [account, isConnected, provider]);
 
-
     if (!isConnected) {
         return (
-            <div className="text-center p-12">
-                <h2 className="text-3xl font-bold text-white mb-2">My Datasets</h2>
-                <p className="text-text-secondary mt-4">Please connect your wallet to view your purchased and submitted datasets.</p>
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="card text-center max-w-md">
+                    <div className="p-12 space-y-6">
+                        <div className="w-20 h-20 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 rounded-2xl flex items-center justify-center mx-auto">
+                            <Wallet className="w-10 h-10 text-indigo-400" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-white">Connect Your Wallet</h2>
+                        <p className="text-gray-400">
+                            Please connect your wallet to view your purchased and submitted datasets.
+                        </p>
+                    </div>
+                </div>
             </div>
         );
     }
     
     if (loading) {
-        return <div className="text-center p-10 text-lg text-text-secondary">Loading your datasets from the blockchain...</div>;
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center space-y-4">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
+                    <p className="text-lg text-gray-300">Loading your datasets from the blockchain...</p>
+                </div>
+            </div>
+        );
     }
 
     return (
-        <div className="container mx-auto px-6 py-12">
-            <div className="text-center mb-12">
-                <h2 className="text-3xl font-bold text-white mb-2">My Datasets</h2>
-                <p className="text-text-secondary">Access your purchased knowledge and track your submissions.</p>
-            </div>
-
-            <div className="max-w-4xl mx-auto space-y-8">
-                {/* Purchased Datasets Section */}
-                <div>
-                    <h3 className="text-2xl font-bold text-white mb-4 border-b-2 border-primary-600 pb-2 flex items-center gap-3">
-                        <Download className="text-accent-green"/> My Purchases
-                    </h3>
-                    {purchasedDatasets.length === 0 ? (
-                        <p className="text-center text-text-muted p-4">You haven't purchased any datasets yet.</p>
-                    ) : (
-                        <div className="space-y-4">
-                            {purchasedDatasets.map(dataset => (
-                                <OwnedDatasetCard key={`purchase-${dataset.tokenId}`} dataset={dataset} type="purchase" />
-                            ))}
-                        </div>
-                    )}
+        <div className="min-h-screen relative overflow-hidden">
+            {/* Background Effects */}
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/10 via-purple-900/10 to-pink-900/10"></div>
+            <div className="absolute top-0 right-1/4 w-72 h-72 bg-purple-500/5 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-0 left-1/4 w-72 h-72 bg-indigo-500/5 rounded-full blur-3xl"></div>
+            
+            <div className="relative z-10 container mx-auto px-6 py-12">
+                {/* Header */}
+                <div className="text-center mb-12">
+                    <div className="flex items-center justify-center gap-3 mb-4">
+                        <User className="w-8 h-8 text-indigo-400" />
+                        <h1 className="text-4xl md:text-5xl font-extrabold gradient-text">
+                            My Datasets
+                        </h1>
+                    </div>
+                    <p className="text-lg text-gray-300 max-w-2xl mx-auto">
+                        Manage your purchased datasets and track your submission performance.
+                    </p>
                 </div>
 
-                {/* Submitted Datasets Section */}
-                <div>
-                    <h3 className="text-2xl font-bold text-white mb-4 border-b-2 border-primary-600 pb-2 flex items-center gap-3">
-                        <Upload className="text-accent-blue"/> My Submissions
-                    </h3>
-                    {submittedDatasets.length === 0 ? (
-                        <p className="text-center text-text-muted p-4">You haven't submitted any datasets yet.</p>
+                {/* Stats Cards */}
+                <div className="grid md:grid-cols-3 gap-6 mb-12">
+                    <div className="card text-center">
+                        <div className="p-6 space-y-3">
+                            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-xl flex items-center justify-center mx-auto">
+                                <Download className="w-6 h-6 text-emerald-400" />
+                            </div>
+                            <div className="text-2xl font-bold text-white">{purchasedDatasets.length}</div>
+                            <div className="text-sm text-gray-400">Purchased</div>
+                        </div>
+                    </div>
+                    <div className="card text-center">
+                        <div className="p-6 space-y-3">
+                            <div className="w-12 h-12 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 rounded-xl flex items-center justify-center mx-auto">
+                                <Upload className="w-6 h-6 text-indigo-400" />
+                            </div>
+                            <div className="text-2xl font-bold text-white">{submittedDatasets.length}</div>
+                            <div className="text-sm text-gray-400">Submitted</div>
+                        </div>
+                    </div>
+                    <div className="card text-center">
+                        <div className="p-6 space-y-3">
+                            <div className="w-12 h-12 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl flex items-center justify-center mx-auto">
+                                <TrendingUp className="w-6 h-6 text-purple-400" />
+                            </div>
+                            <div className="text-2xl font-bold text-white">
+                                {submittedDatasets.reduce((total, dataset) => total + (dataset.totalSales || 0), 0)}
+                            </div>
+                            <div className="text-sm text-gray-400">Total Sales</div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Tab Navigation */}
+                <div className="card mb-8">
+                    <div className="p-2">
+                        <div className="flex bg-gray-800/50 rounded-xl overflow-hidden">
+                            <button
+                                onClick={() => setActiveTab('purchases')}
+                                className={`flex-1 flex items-center justify-center gap-3 py-3 px-6 font-semibold transition-all duration-300 ${
+                                    activeTab === 'purchases'
+                                        ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg'
+                                        : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                                }`}
+                            >
+                                <Download className="w-5 h-5" />
+                                My Purchases ({purchasedDatasets.length})
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('submissions')}
+                                className={`flex-1 flex items-center justify-center gap-3 py-3 px-6 font-semibold transition-all duration-300 ${
+                                    activeTab === 'submissions'
+                                        ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg'
+                                        : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                                }`}
+                            >
+                                <Upload className="w-5 h-5" />
+                                My Submissions ({submittedDatasets.length})
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Dataset Lists */}
+                <div className="max-w-6xl mx-auto">
+                    {activeTab === 'purchases' ? (
+                        <div className="space-y-6">
+                            {purchasedDatasets.length === 0 ? (
+                                <div className="card text-center py-16">
+                                    <div className="space-y-4">
+                                        <div className="w-24 h-24 bg-gray-700/50 rounded-full flex items-center justify-center mx-auto">
+                                            <ShoppingBag className="w-12 h-12 text-gray-500" />
+                                        </div>
+                                        <h3 className="text-2xl font-bold text-gray-300">No Purchases Yet</h3>
+                                        <p className="text-gray-500 max-w-md mx-auto">
+                                            Browse the marketplace to discover valuable datasets for your AI training needs.
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : (
+                                purchasedDatasets.map(dataset => (
+                                    <OwnedDatasetCard 
+                                        key={`purchase-${dataset.tokenId}`} 
+                                        dataset={dataset} 
+                                        type="purchase" 
+                                    />
+                                ))
+                            )}
+                        </div>
                     ) : (
-                        <div className="space-y-4">
-                            {submittedDatasets.map(dataset => (
-                                <OwnedDatasetCard key={`submission-${dataset.tokenId}`} dataset={dataset} type="submission" />
-                            ))}
+                        <div className="space-y-6">
+                            {submittedDatasets.length === 0 ? (
+                                <div className="card text-center py-16">
+                                    <div className="space-y-4">
+                                        <div className="w-24 h-24 bg-gray-700/50 rounded-full flex items-center justify-center mx-auto">
+                                            <Upload className="w-12 h-12 text-gray-500" />
+                                        </div>
+                                        <h3 className="text-2xl font-bold text-gray-300">No Submissions Yet</h3>
+                                        <p className="text-gray-500 max-w-md mx-auto">
+                                            Start monetizing your debugging expertise by submitting your first dataset.
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : (
+                                submittedDatasets.map(dataset => (
+                                    <OwnedDatasetCard 
+                                        key={`submission-${dataset.tokenId}`} 
+                                        dataset={dataset} 
+                                        type="submission" 
+                                    />
+                                ))
+                            )}
                         </div>
                     )}
                 </div>
