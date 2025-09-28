@@ -6,8 +6,8 @@ import toast from 'react-hot-toast';
 import { Download, ExternalLink, Brain, Upload, User, ShoppingBag, Wallet, Eye, TrendingUp, Calendar } from 'lucide-react';
 
 // Import both ABIs - make sure paths are correct
-import MarketplaceABI from '../../../contracts/artifacts/contracts/Marketplace.sol/Marketplace.json';
-import DatasetNFTABI from '../../../contracts/artifacts/contracts/DatasetNFT.sol/DatasetNFT.json';
+import MarketplaceABI from '../../abis/Marketplace.json';
+import DatasetNFTABI from '../../abis/DatasetNFT.json';
 
 // Enhanced card component for owned/submitted datasets
 const OwnedDatasetCard = ({ dataset, type = 'purchase' }) => {
