@@ -13,19 +13,20 @@ const s3Client = new S3Client({
         accessKeyId: process.env.AKAVE_ACCESS_KEY_ID,
         secretAccessKey: process.env.AKAVE_SECRET_ACCESS_KEY,
     },
+    // --- THIS IS THE FIX ---
+    // This forces the SDK to use the path-style URL (e.g., endpoint/bucket)
+    // instead of the virtual-hosted style (e.g., bucket.endpoint)
+    forcePathStyle: true,
 });
 
 /**
  * A self-healing function that runs on server startup to ensure the S3 bucket exists.
- * If the bucket is not found, it will attempt to create it.
  */
 const ensureBucketExists = async () => {
     try {
-        // HeadBucket is a lightweight command to check for a bucket's existence.
         await s3Client.send(new HeadBucketCommand({ Bucket: BUCKET_NAME }));
-        console.log(`[✔] Akave O3 bucket "${BUCKET_NAME}" already exists.`);
+        console.log(`[✔] Akave O3 bucket "${BUCKET_NAME}" is accessible.`);
     } catch (error) {
-        // If the error indicates the bucket doesn't exist, create it.
         if (error.name === 'NoSuchBucket' || error.$metadata?.httpStatusCode === 404) {
             console.warn(`[!] Akave O3 bucket "${BUCKET_NAME}" not found. Attempting to create it...`);
             try {
@@ -33,11 +34,11 @@ const ensureBucketExists = async () => {
                 console.log(`[✔] Successfully created Akave O3 bucket "${BUCKET_NAME}".`);
             } catch (createError) {
                 console.error(`[❌] CRITICAL: Failed to create Akave O3 bucket. Please create it manually.`, createError);
-                process.exit(1); // Exit if we can't create the bucket
+                process.exit(1);
             }
         } else {
             console.error(`[❌] CRITICAL: Error checking Akave O3 bucket. Check your credentials and endpoint.`, error);
-            process.exit(1); // Exit on other errors like authentication failure
+            process.exit(1);
         }
     }
 };
@@ -47,8 +48,6 @@ ensureBucketExists();
 
 /**
  * Uploads data to Lighthouse for encrypted, persistent storage on Filecoin.
- * @param {object} data - The private data object to upload.
- * @returns {Promise<string>} - The CID of the uploaded data.
  */
 export const uploadToLighthouse = async (data) => {
     const dataString = JSON.stringify(data);
@@ -62,9 +61,6 @@ export const uploadToLighthouse = async (data) => {
 
 /**
  * Uploads public metadata to Akave O3 (S3-compatible storage).
- * @param {object} metadata - The public metadata object.
- * @param {string} filename - The desired filename for the object.
- * @returns {Promise<string>} - The public URL of the metadata file.
  */
 export const uploadToAkave = async (metadata, filename) => {
     const params = {
@@ -72,14 +68,14 @@ export const uploadToAkave = async (metadata, filename) => {
         Key: filename,
         Body: JSON.stringify(metadata, null, 2),
         ContentType: 'application/json',
-        ACL: 'public-read',
+        ACL: 'public-read'
     };
 
     try {
         await s3Client.send(new PutObjectCommand(params));
-        // This URL format (virtual-hosted style) is standard for S3-compatible services like Akave O3.
-        const endpoint = process.env.AKAVE_ENDPOINT;
-        const url = `${endpoint.replace('https://', `https://${BUCKET_NAME}.`)}/${filename}`;
+        // --- THIS URL IS ALSO CORRECTED ---
+        // Now using the path-style URL format.
+        const url = `${process.env.AKAVE_ENDPOINT}/${BUCKET_NAME}/${filename}`;
         console.log(`  Akave O3 URL: ${url}`);
         return url;
     } catch (err) {
@@ -87,4 +83,3 @@ export const uploadToAkave = async (metadata, filename) => {
         throw new Error("Failed to upload public metadata.");
     }
 };
-

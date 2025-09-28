@@ -18,20 +18,21 @@ const OwnedDatasetCard = ({ dataset, type = 'purchase' }) => {
 
     const handleDownload = async () => {
         const toastId = toast.loading("Preparing secure download...");
-        
+    
         try {
-            console.log("Attempting to download private data for CID:", dataset.private_data_cid);
-            
-            const message = await signer.signMessage(`I am signing a message to download CID: ${dataset.private_data_cid}`);
-            console.log("Generated Auth Signature:", message);
-            
-            toast.success("Download would start here! Check the console for details.", { id: toastId, duration: 5000 });
-
-        } catch(error) {
+            const url = `https://files.lighthouse.storage/viewFile/${dataset.private_data_cid}`;
+            console.log("Downloading from:", url);
+    
+            // Trigger download by opening in new tab (or use `window.location.href` for direct)
+            window.open(url, "_blank");
+    
+            toast.success("Download started!", { id: toastId, duration: 4000 });
+        } catch (error) {
             console.error("Download failed:", error);
             toast.error("Download failed. See console for details.", { id: toastId });
         }
     };
+    
     
     const explorerUrl = `https://calibration.filfox.info/en/token/${import.meta.env.VITE_NFT_CONTRACT_ADDRESS}?a=${dataset.tokenId}`;
 
